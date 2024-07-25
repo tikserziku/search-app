@@ -17,29 +17,43 @@
     </form>
     <div id="results"></div>
     <div id="error" style="color: red;"></div>
+    <div id="debug" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px;"></div>
 
     <script>
         const form = document.getElementById('searchForm');
         const input = document.getElementById('searchInput');
         const results = document.getElementById('results');
         const error = document.getElementById('error');
+        const debug = document.getElementById('debug');
+
+        function logDebug(message) {
+            console.log(message);
+            debug.innerHTML += `<p>${message}</p>`;
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const query = input.value;
             results.textContent = 'Загрузка...';
             error.textContent = '';
+            debug.innerHTML = '';
+
+            logDebug(`Отправка запроса для: ${query}`);
 
             try {
                 const response = await axios.get(`/api/v1/get?url=${encodeURIComponent(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`)}`);
                 
-                console.log('API Response:', response.data);  // Добавим вывод в консоль для отладки
-                
+                logDebug(`Получен ответ от сервера. Статус: ${response.status}`);
+                logDebug(`Данные ответа: ${JSON.stringify(response.data).substring(0, 200)}...`);
+
                 if (response.data.status_code === 200) {
                     const data = JSON.parse(response.data.content);
+                    logDebug(`Распарсенные данные: ${JSON.stringify(data).substring(0, 200)}...`);
+                    
                     let output = '';
                     
                     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+                        logDebug(`Найдено ${data.RelatedTopics.length} связанных тем`);
                         data.RelatedTopics.forEach(topic => {
                             if (topic.FirstURL && topic.Text) {
                                 output += `
@@ -52,15 +66,17 @@
                             }
                         });
                     } else {
+                        logDebug('Связанные темы не найдены');
                         output = '<p>По вашему запросу ничего не найдено.</p>';
                     }
                     
                     results.innerHTML = output;
                 } else {
+                    logDebug(`Ошибка статуса: ${response.data.status_code}`);
                     error.textContent = `Ошибка: ${response.data.status_code}`;
                 }
             } catch (e) {
-                console.error('Error:', e);  // Добавим вывод ошибки в консоль
+                logDebug(`Ошибка: ${e.message}`);
                 error.textContent = `Произошла ошибка: ${e.message}`;
             }
         });
