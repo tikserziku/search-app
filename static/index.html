@@ -3,10 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поиск в Висагинасе (Отладка)</title>
+    <title>Поиск в Висагинасе</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <style>
-        /* ... (предыдущие стили) ... */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #searchForm {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #searchInput {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #searchButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #results {
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        .result-item {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        .result-name {
+            font-size: 18px;
+            color: #1a0dab;
+            margin-bottom: 5px;
+        }
+        .result-address {
+            font-size: 14px;
+            color: #006621;
+            margin-bottom: 5px;
+        }
+        .result-category {
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        #error {
+            color: red;
+            margin-top: 10px;
+        }
         #debug {
             margin-top: 20px;
             padding: 10px;
@@ -16,7 +66,7 @@
     </style>
 </head>
 <body>
-    <h1>Поиск в Висагинасе (Отладка)</h1>
+    <h1>Поиск в Висагинасе</h1>
     <form id="searchForm">
         <input type="text" id="searchInput" placeholder="Введите запрос (например, 'кафе')" required>
         <button type="submit" id="searchButton">Поиск</button>
@@ -32,38 +82,9 @@
         const error = document.getElementById('error');
         const debug = document.getElementById('debug');
 
-        // Замените на ваш реальный API ключ
-        const FOURSQUARE_API_KEY = 'YOUR_FOURSQUARE_API_KEY';
-
         function log(message) {
             console.log(message);
             debug.innerHTML += `<p>${message}</p>`;
-        }
-
-        async function searchPlaces(query) {
-            const url = 'https://api.foursquare.com/v3/places/search';
-            const params = new URLSearchParams({
-                query: query,
-                near: 'Висагинас,LT',
-                limit: 10
-            });
-
-            log(`Отправка запроса к Foursquare API: ${url}?${params}`);
-
-            try {
-                const response = await axios.get(`${url}?${params}`, {
-                    headers: {
-                        Accept: 'application/json',
-                        Authorization: fsq3ARw21x6jfc5lLXpUs8D/rZx9eBOGjHV60BlQIlaWso8=
-                    }
-                });
-
-                log(`Получен ответ от API. Статус: ${response.status}`);
-                return response.data.results;
-            } catch (err) {
-                log(`Ошибка при запросе к API: ${err.message}`);
-                throw err;
-            }
         }
 
         form.addEventListener('submit', async (e) => {
@@ -76,34 +97,33 @@
             log(`Начало поиска для запроса: "${query}"`);
 
             try {
-                const places = await searchPlaces(query);
+                const response = await axios.get(`/api/search?query=${encodeURIComponent(query)}`);
+                const data = response.data;
 
-                log(`Получено результатов: ${places.length}`);
+                log(`Получен ответ от сервера. Статус: ${response.status}`);
 
-                if (places.length === 0) {
+                if (data.results && data.results.length > 0) {
+                    log(`Найдено результатов: ${data.results.length}`);
+                    let output = '';
+                    data.results.forEach(place => {
+                        output += `
+                            <div class="result-item">
+                                <div class="result-name">${place.name}</div>
+                                <div class="result-category">${place.categories[0]?.name || 'Категория не указана'}</div>
+                                <div class="result-address">${place.location.formatted_address || 'Адрес не указан'}</div>
+                            </div>
+                        `;
+                    });
+                    results.innerHTML = output;
+                } else {
                     results.innerHTML = '<p>По вашему запросу ничего не найдено.</p>';
-                    return;
                 }
-
-                let output = '';
-                places.forEach(place => {
-                    output += `
-                        <div class="result-item">
-                            <div class="result-name">${place.name}</div>
-                            <div class="result-category">${place.categories[0]?.name || 'Категория не указана'}</div>
-                            <div class="result-address">${place.location.formatted_address || 'Адрес не указан'}</div>
-                        </div>
-                    `;
-                });
-                
-                results.innerHTML = output;
             } catch (err) {
                 error.textContent = 'Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз позже.';
                 log(`Ошибка при обработке результатов: ${err.message}`);
             }
         });
 
-        // Проверка загрузки скрипта
         log('Скрипт загружен и готов к работе');
     </script>
 </body>
