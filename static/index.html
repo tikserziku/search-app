@@ -6,7 +6,45 @@
     <title>Поисковое приложение</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <style>
-        /* Стили остаются теми же */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #searchForm {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #searchInput {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #searchButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #results {
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        .result-item {
+            margin-bottom: 20px;
+        }
+        .result-title {
+            font-size: 18px;
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .result-snippet {
+            font-size: 14px;
+            color: #545454;
+        }
     </style>
 </head>
 <body>
@@ -41,7 +79,7 @@
             logDebug(`Отправка запроса для: ${query}`);
 
             try {
-                const response = await axios.get(`/api/v1/get?url=${encodeURIComponent(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`)}`);
+                const response = await axios.get(`/api/v1/get?url=${encodeURIComponent(`https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`)}`);
                 
                 logDebug(`Получен ответ от сервера. Статус: ${response.status}`);
                 logDebug(`Данные ответа: ${JSON.stringify(response.data).substring(0, 200)}...`);
@@ -52,21 +90,18 @@
                     
                     let output = '';
                     
-                    if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-                        logDebug(`Найдено ${data.RelatedTopics.length} связанных тем`);
-                        data.RelatedTopics.forEach(topic => {
-                            if (topic.FirstURL && topic.Text) {
-                                output += `
-                                    <div class="result-item">
-                                        <a href="${topic.FirstURL}" class="result-title" target="_blank">${topic.Text.split(' - ')[0]}</a>
-                                        <div class="result-snippet">${topic.Text.split(' - ')[1] || ''}</div>
-                                        <div class="result-url">${topic.FirstURL}</div>
-                                    </div>
-                                `;
-                            }
+                    if (data.query && data.query.search && data.query.search.length > 0) {
+                        logDebug(`Найдено ${data.query.search.length} результатов`);
+                        data.query.search.forEach(item => {
+                            output += `
+                                <div class="result-item">
+                                    <a href="https://ru.wikipedia.org/wiki/${encodeURIComponent(item.title)}" class="result-title" target="_blank">${item.title}</a>
+                                    <div class="result-snippet">${item.snippet}</div>
+                                </div>
+                            `;
                         });
                     } else {
-                        logDebug('Связанные темы не найдены');
+                        logDebug('Результаты не найдены');
                         output = '<p>По вашему запросу ничего не найдено.</p>';
                     }
                     
