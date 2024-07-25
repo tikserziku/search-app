@@ -3,79 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поиск в Висагинасе</title>
+    <title>Поиск в Висагинасе (Отладка)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #searchForm {
-            display: flex;
-            margin-bottom: 20px;
-        }
-        #searchInput {
-            flex-grow: 1;
+        /* ... (предыдущие стили) ... */
+        #debug {
+            margin-top: 20px;
             padding: 10px;
-            font-size: 16px;
-        }
-        #searchButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        #results {
-            border: 1px solid #ddd;
-            padding: 20px;
-        }
-        .result-item {
-            margin-bottom: 20px;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 5px;
-        }
-        .result-name {
-            font-size: 18px;
-            color: #1a0dab;
-            margin-bottom: 5px;
-        }
-        .result-address {
-            font-size: 14px;
-            color: #006621;
-            margin-bottom: 5px;
-        }
-        .result-category {
-            font-style: italic;
-            margin-bottom: 5px;
-        }
-        #error {
-            color: red;
-            margin-top: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
-    <h1>Поиск в Висагинасе</h1>
+    <h1>Поиск в Висагинасе (Отладка)</h1>
     <form id="searchForm">
         <input type="text" id="searchInput" placeholder="Введите запрос (например, 'кафе')" required>
         <button type="submit" id="searchButton">Поиск</button>
     </form>
     <div id="results"></div>
     <div id="error"></div>
+    <div id="debug"></div>
 
     <script>
         const form = document.getElementById('searchForm');
         const input = document.getElementById('searchInput');
         const results = document.getElementById('results');
         const error = document.getElementById('error');
+        const debug = document.getElementById('debug');
 
         // Замените на ваш реальный API ключ
         const FOURSQUARE_API_KEY = 'YOUR_FOURSQUARE_API_KEY';
+
+        function log(message) {
+            console.log(message);
+            debug.innerHTML += `<p>${message}</p>`;
+        }
 
         async function searchPlaces(query) {
             const url = 'https://api.foursquare.com/v3/places/search';
@@ -85,17 +48,20 @@
                 limit: 10
             });
 
+            log(`Отправка запроса к Foursquare API: ${url}?${params}`);
+
             try {
                 const response = await axios.get(`${url}?${params}`, {
                     headers: {
                         Accept: 'application/json',
-                        Authorization: fsq3kYNkZSdVuj+Wedq222yAX8dZ/wM948/3ZxuNYiyXXmM=
+                        Authorization: FOURSQUARE_API_KEY
                     }
                 });
 
+                log(`Получен ответ от API. Статус: ${response.status}`);
                 return response.data.results;
             } catch (err) {
-                console.error('Error fetching data:', err);
+                log(`Ошибка при запросе к API: ${err.message}`);
                 throw err;
             }
         }
@@ -105,9 +71,14 @@
             const query = input.value;
             results.innerHTML = 'Поиск...';
             error.textContent = '';
+            debug.innerHTML = '';
+
+            log(`Начало поиска для запроса: "${query}"`);
 
             try {
                 const places = await searchPlaces(query);
+
+                log(`Получено результатов: ${places.length}`);
 
                 if (places.length === 0) {
                     results.innerHTML = '<p>По вашему запросу ничего не найдено.</p>';
@@ -128,8 +99,12 @@
                 results.innerHTML = output;
             } catch (err) {
                 error.textContent = 'Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз позже.';
+                log(`Ошибка при обработке результатов: ${err.message}`);
             }
         });
+
+        // Проверка загрузки скрипта
+        log('Скрипт загружен и готов к работе');
     </script>
 </body>
 </html>
