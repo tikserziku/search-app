@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поисковое приложение</title>
+    <title>Поисковое приложение Висагинас</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <style>
         body {
@@ -35,85 +35,103 @@
         }
         .result-item {
             margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
         }
         .result-title {
             font-size: 18px;
             color: #1a0dab;
-            text-decoration: none;
+            margin-bottom: 5px;
         }
-        .result-snippet {
+        .result-address {
             font-size: 14px;
-            color: #545454;
+            color: #006621;
+            margin-bottom: 5px;
+        }
+        .result-status {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .open {
+            color: green;
+        }
+        .closed {
+            color: red;
         }
     </style>
 </head>
 <body>
-    <h1>Поисковое приложение</h1>
+    <h1>Поиск в Висагинасе</h1>
     <form id="searchForm">
-        <input type="text" id="searchInput" placeholder="Введите поисковый запрос" required>
+        <input type="text" id="searchInput" placeholder="Введите запрос (например, 'открытые магазины')" required>
         <button type="submit" id="searchButton">Поиск</button>
     </form>
     <div id="results"></div>
     <div id="error" style="color: red;"></div>
-    <div id="debug" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px;"></div>
 
     <script>
         const form = document.getElementById('searchForm');
         const input = document.getElementById('searchInput');
         const results = document.getElementById('results');
         const error = document.getElementById('error');
-        const debug = document.getElementById('debug');
 
-        function logDebug(message) {
-            console.log(message);
-            debug.innerHTML += `<p>${message}</p>`;
+        // Имитация базы данных местных предприятий
+        const localBusinesses = [
+            { name: "Максима", type: "Супермаркет", address: "ул. Парко 16", openHours: "8:00 - 22:00" },
+            { name: "Ики", type: "Супермаркет", address: "ул. Таикос 80A", openHours: "7:00 - 22:00" },
+            { name: "Рими", type: "Супермаркет", address: "ул. Ветерану 2", openHours: "8:00 - 22:00" },
+            { name: "Висагино аптека", type: "Аптека", address: "ул. Таикос 60A", openHours: "8:00 - 20:00" },
+            { name: "Висагино пицерия", type: "Ресторан", address: "ул. Таикос 7A", openHours: "11:00 - 22:00" },
+            { name: "Золотой колос", type: "Пекарня", address: "ул. Сантарвес 7", openHours: "7:00 - 19:00" },
+        ];
+
+        function isOpen(openHours) {
+            const [open, close] = openHours.split(' - ');
+            const now = new Date();
+            const openTime = new Date(now.toDateString() + ' ' + open);
+            const closeTime = new Date(now.toDateString() + ' ' + close);
+            return now >= openTime && now <= closeTime;
         }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const query = input.value;
-            results.textContent = 'Загрузка...';
+            const query = input.value.toLowerCase();
+            results.innerHTML = 'Поиск...';
             error.textContent = '';
-            debug.innerHTML = '';
 
-            logDebug(`Отправка запроса для: ${query}`);
+            // Имитация задержки сети
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            try {
-                const response = await axios.get(`/api/v1/get?url=${encodeURIComponent(`https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`)}`);
-                
-                logDebug(`Получен ответ от сервера. Статус: ${response.status}`);
-                logDebug(`Данные ответа: ${JSON.stringify(response.data).substring(0, 200)}...`);
+            let filteredBusinesses = localBusinesses;
 
-                if (response.data.status_code === 200) {
-                    const data = JSON.parse(response.data.content);
-                    logDebug(`Распарсенные данные: ${JSON.stringify(data).substring(0, 200)}...`);
-                    
-                    let output = '';
-                    
-                    if (data.query && data.query.search && data.query.search.length > 0) {
-                        logDebug(`Найдено ${data.query.search.length} результатов`);
-                        data.query.search.forEach(item => {
-                            output += `
-                                <div class="result-item">
-                                    <a href="https://ru.wikipedia.org/wiki/${encodeURIComponent(item.title)}" class="result-title" target="_blank">${item.title}</a>
-                                    <div class="result-snippet">${item.snippet}</div>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        logDebug('Результаты не найдены');
-                        output = '<p>По вашему запросу ничего не найдено.</p>';
-                    }
-                    
-                    results.innerHTML = output;
-                } else {
-                    logDebug(`Ошибка статуса: ${response.data.status_code}`);
-                    error.textContent = `Ошибка: ${response.data.status_code}`;
-                }
-            } catch (e) {
-                logDebug(`Ошибка: ${e.message}`);
-                error.textContent = `Произошла ошибка: ${e.message}`;
+            if (query.includes('открыт')) {
+                filteredBusinesses = localBusinesses.filter(business => isOpen(business.openHours));
+            } else if (query.includes('магазин')) {
+                filteredBusinesses = localBusinesses.filter(business => business.type.toLowerCase().includes('маркет'));
+            } else if (query.includes('еда') || query.includes('ресторан')) {
+                filteredBusinesses = localBusinesses.filter(business => ['Ресторан', 'Пекарня'].includes(business.type));
             }
+
+            if (filteredBusinesses.length === 0) {
+                results.innerHTML = '<p>По вашему запросу ничего не найдено.</p>';
+                return;
+            }
+
+            let output = '';
+            filteredBusinesses.forEach(business => {
+                const status = isOpen(business.openHours) ? '<span class="open">Открыто</span>' : '<span class="closed">Закрыто</span>';
+                output += `
+                    <div class="result-item">
+                        <div class="result-title">${business.name} (${business.type})</div>
+                        <div class="result-address">${business.address}</div>
+                        <div class="result-status">Статус: ${status}</div>
+                        <div>Часы работы: ${business.openHours}</div>
+                    </div>
+                `;
+            });
+            
+            results.innerHTML = output;
         });
     </script>
 </body>
