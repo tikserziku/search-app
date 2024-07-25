@@ -64,7 +64,7 @@
 <body>
     <h1>Поиск в Висагинасе</h1>
     <form id="searchForm">
-        <input type="text" id="searchInput" placeholder="Введите запрос (например, 'открытые магазины')" required>
+        <input type="text" id="searchInput" placeholder="Введите запрос (например, 'открытые рестораны')" required>
         <button type="submit" id="searchButton">Поиск</button>
     </form>
     <div id="results"></div>
@@ -76,7 +76,7 @@
         const results = document.getElementById('results');
         const error = document.getElementById('error');
 
-        // Имитация базы данных местных предприятий
+        // Расширенная база данных местных предприятий
         const localBusinesses = [
             { name: "Максима", type: "Супермаркет", address: "ул. Парко 16", openHours: "8:00 - 22:00" },
             { name: "Ики", type: "Супермаркет", address: "ул. Таикос 80A", openHours: "7:00 - 22:00" },
@@ -84,6 +84,15 @@
             { name: "Висагино аптека", type: "Аптека", address: "ул. Таикос 60A", openHours: "8:00 - 20:00" },
             { name: "Висагино пицерия", type: "Ресторан", address: "ул. Таикос 7A", openHours: "11:00 - 22:00" },
             { name: "Золотой колос", type: "Пекарня", address: "ул. Сантарвес 7", openHours: "7:00 - 19:00" },
+            { name: "Автомастерская 'Колесо'", type: "Автосервис", address: "ул. Статибининку 1", openHours: "9:00 - 18:00" },
+            { name: "Кафе 'Энергетик'", type: "Кафе", address: "ул. Парко 12", openHours: "8:00 - 20:00" },
+            { name: "Библиотека Висагинаса", type: "Библиотека", address: "ул. Таикос 7", openHours: "10:00 - 18:00" },
+            { name: "Спортивный центр", type: "Спорткомплекс", address: "ул. Парко 2A", openHours: "7:00 - 22:00" },
+            { name: "Салон красоты 'Элегант'", type: "Салон красоты", address: "ул. Ветерану 9", openHours: "9:00 - 19:00" },
+            { name: "Банк SEB", type: "Банк", address: "ул. Таикос 20", openHours: "9:00 - 17:00" },
+            { name: "Почта Висагинаса", type: "Почта", address: "ул. Таикос 14", openHours: "8:00 - 18:00" },
+            { name: "Кинотеатр 'Аполло'", type: "Кинотеатр", address: "ул. Ветерану 5", openHours: "12:00 - 23:00" },
+            { name: "Ресторан 'Роса'", type: "Ресторан", address: "ул. Таикос 6", openHours: "12:00 - 22:00" }
         ];
 
         function isOpen(openHours) {
@@ -94,24 +103,32 @@
             return now >= openTime && now <= closeTime;
         }
 
+        function searchBusinesses(query) {
+            query = query.toLowerCase();
+            return localBusinesses.filter(business => {
+                const isOpenNow = isOpen(business.openHours);
+                if (query.includes('открыт') && !isOpenNow) return false;
+                if (query.includes('закрыт') && isOpenNow) return false;
+                
+                return business.name.toLowerCase().includes(query) ||
+                       business.type.toLowerCase().includes(query) ||
+                       business.address.toLowerCase().includes(query) ||
+                       (query.includes('магазин') && business.type.toLowerCase().includes('маркет')) ||
+                       (query.includes('еда') && ['ресторан', 'кафе', 'пекарня'].includes(business.type.toLowerCase())) ||
+                       (query.includes('авто') && business.type.toLowerCase().includes('автосервис'));
+            });
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const query = input.value.toLowerCase();
+            const query = input.value;
             results.innerHTML = 'Поиск...';
             error.textContent = '';
 
             // Имитация задержки сети
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            let filteredBusinesses = localBusinesses;
-
-            if (query.includes('открыт')) {
-                filteredBusinesses = localBusinesses.filter(business => isOpen(business.openHours));
-            } else if (query.includes('магазин')) {
-                filteredBusinesses = localBusinesses.filter(business => business.type.toLowerCase().includes('маркет'));
-            } else if (query.includes('еда') || query.includes('ресторан')) {
-                filteredBusinesses = localBusinesses.filter(business => ['Ресторан', 'Пекарня'].includes(business.type));
-            }
+            const filteredBusinesses = searchBusinesses(query);
 
             if (filteredBusinesses.length === 0) {
                 results.innerHTML = '<p>По вашему запросу ничего не найдено.</p>';
